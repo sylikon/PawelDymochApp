@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">My Closet sets</string>
+    <string name="no_set_in_added">Bib bop dodej </string>
+    <string name="add_set_button">New Set</string>
+    <string name="set_name">set name</string>
+    <string name="save_set_button">Save set</string>
+</resources>

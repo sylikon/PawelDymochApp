@@ -35,11 +35,9 @@ public class ImagesetListAdapter extends RecyclerView.Adapter<ImagesetListAdapte
     public  class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         // each data item is just a string in this case
         public TextView mTextView;
-        public TextView mTextViewDefinition;
         public ViewHolder(View v) {
             super(v);
             mTextView = v.findViewById(R.id.list_item_number) ;
-            mTextViewDefinition = v.findViewById(R.id.lis_item_definition);
             itemView.setOnClickListener(this);
         }
         void bind (int listIndex){
@@ -71,13 +69,11 @@ public class ImagesetListAdapter extends RecyclerView.Adapter<ImagesetListAdapte
     // Replace the contents of a view (invoked by the layout manager)
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-
         if(!mCursor.moveToPosition(position))
             return;
         String imageTitle = mCursor.getString(mCursor.getColumnIndex(ImageSetContract.ImageSetEntry.COLUMN_TITLE));
-        String imageSet = mCursor.getString(mCursor.getColumnIndex(ImageSetContract.ImageSetEntry.COULMN_IMAGESET));
         holder.mTextView.setText(imageTitle);
-        holder.mTextViewDefinition.setText(imageSet);
+
 
     }
 

@@ -13,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.maciek.paweldymochapp.DB.ImageSetContract;
@@ -28,6 +29,7 @@ public class MainActivity extends AppCompatActivity implements ImagesetListAdapt
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
     private Button button;
+    private TextView mTextView;
     SQLiteDatabase db;
 
     private Toast toast;
@@ -42,16 +44,22 @@ public class MainActivity extends AppCompatActivity implements ImagesetListAdapt
         mRecyclerView.setHasFixedSize(true);
         button = findViewById(R.id.new_set_button);
         button.setOnClickListener(this);
+        mTextView = findViewById(R.id.empty_cursor_text_view) ;
 
         // use a linear layout manager
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setHasFixedSize(true);
         ImageSetDbHelper dbHelper = new ImageSetDbHelper(this);
-        db = dbHelper.getWritableDatabase();
-        TestUtil.insertFakeData(db);
+        db = dbHelper.getReadableDatabase();
 
+        mTextView.setText("");
         Cursor cursor = getAllImageSets();
+        if(cursor.getCount()==0){
+            mTextView.setText("Brak setów kliknij przycisk zeby dodac");
+        }
+
+
 
         // specify an adapter (see also next example)
         mAdapter = new ImagesetListAdapter(this, cursor, this);
@@ -67,8 +75,9 @@ public class MainActivity extends AppCompatActivity implements ImagesetListAdapt
     }
 
     private Cursor getAllImageSets(){
+        String[] ary = new String[] {ImageSetContract.ImageSetEntry.COLUMN_TITLE};
         return db.query(ImageSetContract.ImageSetEntry.TABLE_NAME,
-                null,
+                    ary,
                 null,
                 null,
                 null,

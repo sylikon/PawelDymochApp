@@ -17,7 +17,7 @@ public class TestUtil {
         if (db == null) {
             return;
         }
-        //create a list of fake titles
+        //test recycle viewer, populate with fake data when both values where string
         List<ContentValues> list = new ArrayList<ContentValues>();
 
         ContentValues cv = new ContentValues();

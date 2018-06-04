@@ -14,13 +14,6 @@
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
             android:textSize="24sp"/>
-        <TextView
-            android:id="@+id/lis_item_definition"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textSize="16sp"
-            android:layout_marginLeft="16dp"/>
 
     </LinearLayout>
 

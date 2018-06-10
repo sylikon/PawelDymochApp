@@ -1,4 +1,4 @@
-package com.maciek.paweldymochapp.DB;
+package com.maciek.paweldymochapp.utilities;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

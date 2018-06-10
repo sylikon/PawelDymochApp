@@ -11,6 +11,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -64,18 +65,21 @@ public class MainActivity extends AppCompatActivity implements ImagesetListAdapt
         // specify an adapter (see also next example)
         mAdapter = new ImagesetListAdapter(this, cursor, this);
         mRecyclerView.setAdapter(mAdapter);
+
     }
 
 
     @Override
-    public void onListItemClick(int clickedItemIndex) {
-        String toastMessage = "Item #" + clickedItemIndex + " clicked";
-        toast = Toast.makeText(this, toastMessage, Toast.LENGTH_LONG);
-        toast.show();
+    public void onListItemClick(int clickedItemIndex, String imageTitle, byte[] image) {
+
+        Intent intent = new Intent(MainActivity.this,ClosetSetActivity.class);
+        intent.putExtra("IMAGE_TITLE",imageTitle);
+//        intent.putExtra("IMAGE_SET", image);
+        startActivity(intent);
     }
 
     private Cursor getAllImageSets(){
-        String[] ary = new String[] {ImageSetContract.ImageSetEntry.COLUMN_TITLE};
+        String[] ary = new String[] {ImageSetContract.ImageSetEntry.COLUMN_TITLE, ImageSetContract.ImageSetEntry.COULMN_IMAGESET};
         return db.query(ImageSetContract.ImageSetEntry.TABLE_NAME,
                     ary,
                 null,

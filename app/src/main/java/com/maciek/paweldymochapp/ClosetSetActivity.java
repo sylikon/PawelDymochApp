@@ -5,12 +5,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
-import android.media.ExifInterface;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -19,36 +20,64 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.maciek.paweldymochapp.DB.DbBitmapUtility;
+import com.maciek.paweldymochapp.DB.ImageSetContract;
+import com.maciek.paweldymochapp.DB.ImageSetDbQuery;
+import com.maciek.paweldymochapp.utilities.DbBitmapUtility;
 import com.maciek.paweldymochapp.DB.ImageSetDbHelper;
 import com.maciek.paweldymochapp.DB.InsertSet;
+import com.maciek.paweldymochapp.utilities.PreparePictureUtility;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class ClosetSetActivity extends AppCompatActivity {
+import static com.maciek.paweldymochapp.utilities.PermissionUtility.MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE;
+import static com.maciek.paweldymochapp.utilities.PermissionUtility.checkPermissionWRITE_EXTERNAL_STORAGE;
+
+public class ClosetSetActivity extends AppCompatActivity implements View.OnClickListener {
 
     static final int REQUEST_TAKE_PHOTO = 1;
     private String mCurrentPhotoPath;
+    private Button saveSetButton;
     private ImageView mImageView;
+    private Bitmap dispachedPhoto;
+    private EditText editText;
     SQLiteDatabase db;
+    ImageSetDbQuery imageSetDbQuery;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_closet_set);
+
+
         mImageView = findViewById(R.id.set_image_view);
+        saveSetButton = findViewById(R.id.save_set_button);
+        saveSetButton.setOnClickListener(this);
         checkPermissionWRITE_EXTERNAL_STORAGE(this);
         ImageSetDbHelper dbHelper = new ImageSetDbHelper(this);
         db = dbHelper.getReadableDatabase();
         db = dbHelper.getWritableDatabase();
+        imageSetDbQuery = new ImageSetDbQuery(db);
+
+        Bundle bundle = getIntent().getExtras();
+        if(bundle!=null){
+            String title = bundle.getString("IMAGE_TITLE");
+            Toast.makeText(this, bundle.getString("IMAGE_TITLE"), Toast.LENGTH_SHORT).show();bundle.getString("IMAGE_TITLE");
+            new LoadImageViewFromDb().execute(title);
+
+        }
+
 
         mImageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -72,7 +101,8 @@ public class ClosetSetActivity extends AppCompatActivity {
             // Create the File where the photo should go
             File photoFile = null;
             try {
-                photoFile = createImageFile();
+                photoFile = PreparePictureUtility.createImageFile(this);
+                mCurrentPhotoPath = photoFile.getAbsolutePath();
             } catch (IOException ex) {
                 // Error occurred while creating the File
 
@@ -92,26 +122,11 @@ public class ClosetSetActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
+            dispachedPhoto = PreparePictureUtility.preparePicture(mImageView,mCurrentPhotoPath);
+            mImageView.setImageBitmap(dispachedPhoto);
             galleryAddPic();
         }
     }
-
-
-    private File createImageFile() throws IOException {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = image.getAbsolutePath();
-        return image;
-    }
-
 
     private void galleryAddPic() {
 
@@ -120,80 +135,7 @@ public class ClosetSetActivity extends AppCompatActivity {
         Uri contentUri = Uri.fromFile(f);
         mediaScanIntent.setData(contentUri);
         this.sendBroadcast(mediaScanIntent);
-
-        setPic();
-
-
     }
-
-
-
-    private void setPic() {
-        // Get the dimensions of the View
-        int targetW = mImageView.getWidth();
-        int targetH = mImageView.getHeight();
-
-        // Get the dimensions of the bitmap
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
-        int photoW = bmOptions.outWidth;
-        int photoH = bmOptions.outHeight;
-
-        // Determine how much to scale down the image
-        int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
-
-        // Decode the image file into a Bitmap sized to fill the View
-        bmOptions.inJustDecodeBounds = false;
-        bmOptions.inSampleSize = scaleFactor;
-        Matrix matrix = new Matrix();
-        matrix.postRotate(90);
-        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
-        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-        EditText editText = findViewById(R.id.set_name_editText);
-        String title = editText.getText().toString();
-        InsertSet.insertImage(db,title, DbBitmapUtility.getBytes(rotatedBitmap));
-        MediaStore.Images.Media.insertImage(getContentResolver(), rotatedBitmap, title , "test");
-
-        mImageView.setImageBitmap(rotatedBitmap);
-    }
-
-
-
-
-
-    public static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 123;
-
-    public boolean checkPermissionWRITE_EXTERNAL_STORAGE(
-            final Context context) {
-        int currentAPIVersion = Build.VERSION.SDK_INT;
-        if (currentAPIVersion >= android.os.Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(context,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(
-                        (Activity) context,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-
-
-                } else {
-                    ActivityCompat
-                            .requestPermissions(
-                                    (Activity) context,
-                                    new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE },
-                                    MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-                }
-                return false;
-            } else {
-                return true;
-            }
-
-        } else {
-            return true;
-        }
-    }
-
-
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -211,6 +153,60 @@ public class ClosetSetActivity extends AppCompatActivity {
                         grantResults);
         }
     }
+
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()){
+            case (R.id.save_set_button) :
+                Toast.makeText(this, "dodano zdjecie do setu", Toast.LENGTH_SHORT).show();
+                editText = findViewById(R.id.set_name_editText);
+                String title = editText.getText().toString();
+                InsertSet.insertImage(db,title, DbBitmapUtility.getBytes(dispachedPhoto));
+                MediaStore.Images.Media.insertImage(getContentResolver(), dispachedPhoto, title , "test");
+//                addImageView();
+
+        }
+    }
+
+    public void addImageView(){
+        LinearLayout linearLayout = findViewById(R.id.inner_layout);
+        ImageView image = new ImageView(ClosetSetActivity.this);
+//        android:layout_width="150dp"
+//        android:layout_height="250dp"
+//        android:src="@mipmap/ic_launcher"
+//        android:id="@+id/set_image_view"
+//        android:layout_gravity="center"
+        image.setBackgroundResource(R.drawable.ic_launcher_background);
+        linearLayout.addView(image,150,250);
+
+    }
+
+
+
+    private class LoadImageViewFromDb extends AsyncTask<String, Void, byte[]> {
+
+        @Override
+        protected byte[] doInBackground(String... titles) {
+            int count = titles.length;
+            for(int i = 0; i<count; i++){
+                Cursor cursor = imageSetDbQuery.getQueriedImageSet(titles[i]);
+                while (cursor.moveToPosition(i)){
+                    byte[] image = cursor.getBlob(1);
+                    return image;
+                }
+
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(byte[] bytes) {
+            mImageView.setImageBitmap(DbBitmapUtility.getImage(bytes));
+        }
+    }
+
 
 
 

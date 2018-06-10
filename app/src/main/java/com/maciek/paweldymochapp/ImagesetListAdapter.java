@@ -40,14 +40,13 @@ public class ImagesetListAdapter extends RecyclerView.Adapter<ImagesetListAdapte
             mTextView = v.findViewById(R.id.list_item_number) ;
             itemView.setOnClickListener(this);
         }
-        void bind (int listIndex){
-            mTextView.setText(String.valueOf(listIndex));
-        }
 
         @Override
         public void onClick(View view) {
             int clickedPostion = getAdapterPosition();
-            mOnClickListener.onListItemClick(clickedPostion);
+            String imageTitle = getImageTitle(clickedPostion);
+            byte[] image =getImage(clickedPostion);
+            mOnClickListener.onListItemClick(clickedPostion, imageTitle, image);
         }
     }
 
@@ -71,9 +70,8 @@ public class ImagesetListAdapter extends RecyclerView.Adapter<ImagesetListAdapte
     public void onBindViewHolder(ViewHolder holder, int position) {
         if(!mCursor.moveToPosition(position))
             return;
-        String imageTitle = mCursor.getString(mCursor.getColumnIndex(ImageSetContract.ImageSetEntry.COLUMN_TITLE));
+        String imageTitle = getImageTitle(position);
         holder.mTextView.setText(imageTitle);
-
 
     }
 
@@ -83,7 +81,17 @@ public class ImagesetListAdapter extends RecyclerView.Adapter<ImagesetListAdapte
         return mCursor.getCount();
     }
     public interface ListItemClickListener{
-        void onListItemClick(int clickedItemIndex);
+        void onListItemClick(int clickedItemIndex, String title, byte[] image);
+    }
+
+    private String getImageTitle(int position){
+        mCursor.moveToPosition(position);
+        return mCursor.getString(mCursor.getColumnIndex(ImageSetContract.ImageSetEntry.COLUMN_TITLE));
+    }
+
+    private byte[] getImage(int position){
+        mCursor.moveToPosition(position);
+        return mCursor.getBlob(mCursor.getColumnIndex(ImageSetContract.ImageSetEntry.COULMN_IMAGESET));
     }
 
 }
